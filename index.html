@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>IXH – Swojska</title>
+<title>IXH – Presostaty</title>
 
 <style>
 /* ====== GLOBAL ====== */
@@ -10,103 +10,109 @@ body {
   margin: 0;
   padding: 0;
   font-family: Arial, Helvetica, sans-serif;
-  background: #f2f2f2;
+  background: #f3f3f3;
+}
+
+/* ====== LOGO ====== */
+.logo {
+  max-width: 1100px;
+  margin: 20px auto 10px auto;
+  padding-left: 10px;
+  font-weight: bold;
+  font-size: 22px;
 }
 
 /* ====== PANEL ====== */
 .panel {
   max-width: 1100px;
-  margin: 20px auto;
-  background: #ffffff;
-  border: 3px solid #2c2c2c;
-  border-radius: 6px;
-  box-shadow: 0 0 12px rgba(0,0,0,0.2);
+  margin: 0 auto;
+  background: linear-gradient(145deg, #0f2a33, #0b1f27);
+  border-radius: 24px;
+  padding: 30px;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+  color: #ffffff;
 }
 
 /* ====== HEADER ====== */
 .header {
-  background: #2c2c2c;
-  color: #ffffff;
-  padding: 12px 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header .title {
-  font-size: 20px;
-  font-weight: bold;
-  letter-spacing: 1px;
-}
-
-.header .alarms {
-  font-size: 18px;
+  text-align: center;
+  font-size: 42px;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
 }
 
 /* ====== GRID ====== */
 .grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 10px;
-  padding: 16px;
+  gap: 18px;
 }
 
 /* ====== TILE ====== */
 .tile {
-  border: 2px solid #2c2c2c;
-  border-radius: 4px;
   height: 70px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: bold;
+  transition: background 0.2s;
 }
 
 /* ====== STATES ====== */
 .tile.ok {
-  background: #2ecc71;   /* ZIELONY = OK */
+  background: #39d176;   /* zielony */
   color: #ffffff;
 }
 
 .tile.alarm {
-  background: #bfbfbf;   /* SZARY = NIE OK */
+  background: #cfcfcf;   /* szary */
   color: #000000;
 }
 
 /* ====== HISTORY ====== */
 .history {
-  border-top: 3px solid #2c2c2c;
-  padding: 10px;
+  margin-top: 30px;
 }
 
 .history-title {
-  font-weight: bold;
-  margin-bottom: 6px;
+  font-size: 18px;
+  margin-bottom: 8px;
 }
 
 .history-box {
+  background: rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 12px;
   height: 220px;
   overflow-y: auto;
-  background: #fafafa;
-  border: 1px solid #999999;
-  padding: 8px;
   font-family: monospace;
   font-size: 14px;
   white-space: pre-line;
+}
+
+/* ====== FOOTER ====== */
+.footer {
+  max-width: 1100px;
+  margin: 20px auto;
+  text-align: center;
+  color: #555;
+  font-size: 14px;
 }
 </style>
 </head>
 
 <body>
 
+<div class="logo">
+  IXH – Integrated eXecution Hub
+</div>
+
 <div class="panel">
 
-  <!-- HEADER -->
-  <div class="header">
-    <div class="title">SYSTEM PRESOSTATÓW</div>
-    <div class="alarms" id="headerBar">AKTYWNE ALARMY: 0</div>
-  </div>
+  <!-- CLOCK / HEADER -->
+  <div class="header" id="clock">--:--:--</div>
 
   <!-- TILES -->
   <div class="grid">
@@ -121,14 +127,31 @@ body {
 
   <!-- HISTORY -->
   <div class="history">
-    <div class="history-title">HISTORIA ZDARZEŃ</div>
+    <div class="history-title">Historia zdarzeń</div>
     <div class="history-box" id="historyBox"></div>
   </div>
 
 </div>
 
-<!-- ====== JS / WEBSOCKET ====== -->
+<div class="footer">
+  IXH-Polska<br>
+  ixh@linuxmail.org | +48 578 424 942
+</div>
+
+<!-- ====== JS ====== -->
 <script>
+/* CLOCK */
+function updateClock() {
+  const d = new Date();
+  const h = String(d.getHours()).padStart(2,'0');
+  const m = String(d.getMinutes()).padStart(2,'0');
+  const s = String(d.getSeconds()).padStart(2,'0');
+  document.getElementById("clock").innerText = h + ":" + m + ":" + s;
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* WEBSOCKET */
 let socket;
 let lastMsg = 0;
 
@@ -137,26 +160,19 @@ function connectWS() {
 
   socket.onmessage = function(event) {
     lastMsg = Date.now();
-
     let parts = event.data.split(";", 3);
     if (parts.length < 3) return;
 
     let states = parts[0];
-    let alarms = parts[1];
     let history = parts[2];
 
     for (let i = 0; i < 44; i++) {
       let tile = document.getElementById("p" + (i + 1));
-      if (!tile) continue;
-
       if (states[i] === "1")
         tile.className = "tile ok";
       else
         tile.className = "tile alarm";
     }
-
-    document.getElementById("headerBar").innerText =
-      "AKTYWNE ALARMY: " + alarms;
 
     document.getElementById("historyBox").innerText = history;
   };
